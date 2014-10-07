@@ -6,16 +6,19 @@ import logging
 from gensim import corpora, models, similarities
 import nltk
 import argparse
+import csv
 
 class LDA():
-    def __init__(self, __logLevel, __infile):
+    def __init__(self, __logLevel, __infile, __topics):
         self.log = logging.getLogger('LDA')
         self.log.setLevel(__logLevel)
         self.infile = __infile
+        self.topics = __topics
         self.documents = []
 
         # 1. Load text file
         self.readFile()
+        self.log.debug(self.documents)
 
         # 2. Compute LDA
         self.computeLDA()
@@ -23,10 +26,14 @@ class LDA():
         # 3. Serialize Turtle
 
     def readFile(self):
-        with open(self.infile) as f:
-            self.documents = f.readlines()
+        with open(self.infile, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter='\t', quotechar='"')
+            next(reader, None) # skip headers
+            for row in reader:
+                self.documents.append(unicode(row[1], 'utf-8'))
 
     def computeLDA(self):
+        utf_stopwords = ['\u0xc2']
         tokenizer = nltk.tokenize.RegexpTokenizer('\(.*\)|[\s\.\,\%\:\$]+', gaps=True)
         texts = [[word for word in tokenizer.tokenize(document.lower()) if word not in nltk.corpus.stopwords.words('english')] for document in self.documents]
         self.log.debug(texts)
@@ -49,7 +56,7 @@ class LDA():
         corpus_tfidf = self.tfidf[self.corpus]
         self.log.debug(self.tfidf)
 
-        lda = models.ldamodel.LdaModel(corpus=self.corpus, id2word=self.dictionary, num_topics=100, update_every=1, chunksize=10000, passes=1)
+        lda = models.ldamodel.LdaModel(corpus=self.corpus, id2word=self.dictionary, num_topics=self.topics, update_every=1, chunksize=10000, passes=1)
         lda.print_topics(10)
 
 if __name__ == "__main__":
@@ -62,7 +69,9 @@ if __name__ == "__main__":
                         help = "Be verbose -- debug logging level",
                         required = False, 
                         action = 'store_true')
-
+    parser.add_argument('--topics', '-t',
+                        help = "Number of topics",
+                        required = True)
     args = parser.parse_args()
 
     # Logging
@@ -73,6 +82,6 @@ if __name__ == "__main__":
     logging.info('Initializing...')
 
     # Instance
-    lda = LDA(logLevel, args.infile)
+    lda = LDA(logLevel, args.infile, int(args.topics))
 
     logging.info('Done.')
