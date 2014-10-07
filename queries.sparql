@@ -1,0 +1,24 @@
+# Number of agenda items per title per year (2000)
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lp: <http://purl.org/linkedpolitics/vocabulary/>
+PREFIX lp_eu: <http://purl.org/linkedpolitics/vocabulary/eu/plenary/>
+PREFIX ns1: <http://xmlns.com/foaf/0.1/>
+PREFIX ns2: <http://www.w3.org/2002/07/owl#>
+PREFIX xml: <http://www.w3.org/XML/1998/namespace>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+SELECT (COUNT(?agendaitem) AS ?count) ?title
+WHERE {
+  ?speech a lp_eu:Speech .
+  ?agendaitem lp:hasPart ?speech .
+  ?agendaitem lp:title ?title .
+  ?agendaitem dc:date ?date .
+  FILTER (langMatches(lang(?title), "EN"))
+  FILTER (?date > "2000-01-01"^^xsd:date && ?date < "2001-01-01"^^xsd:date)
+} 
+GROUP BY ?title
+ORDER BY ?count
+LIMIT 500
